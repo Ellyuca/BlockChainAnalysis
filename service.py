@@ -45,20 +45,29 @@ def chainBot():
     if not req['result']['actionIncomplete']:
         ##
         # Check in which context we are
-        if req['result']['contexts'][0]['name'] == "info-bitcoin-exchange":
+        if req['result']['contexts'][0]['name'] == "info-cryptocurrency-exchange":
             ##
             # Call the reponse for the "info-bitcoin-exchange" context
-            response = get_ticker(req['result']['contexts'][
-                                  0]['parameters']['currency'])
-            ##
-            # Return the response
-            return jsonify({
-                "speech": response,
-                "displayText": response,
-                "data": {},
-                "contextOut": [],
-                "source": ""
-            }), 200, {'Content-Type': 'text/css; charset=utf-8'}
+            if  req['result']['contexts'][0]['parameters']['cryptocurrency'] == "bitcoin":
+                response = get_ticker(req['result']['contexts'][
+                                      0]['parameters']['currency'])
+                ##
+                # Return the response
+                return jsonify({
+                    "speech": response,
+                    "displayText": response,
+                    "data": {},
+                    "contextOut": [],
+                    "source": ""
+                }), 200, {'Content-Type': 'text/css; charset=utf-8'}
+            else:
+                return jsonify({
+                    "speech": "I don't know the exchange rate for that cryptocurrency...",
+                    "displayText": "I don't know the exchange rate for that cryptocurrency...",
+                    "data": {},
+                    "contextOut": [],
+                    "source": ""
+                }), 200, {'Content-Type': 'text/css; charset=utf-8'}
         else:
             return jsonify({
                 "speech": "Sorry, can't understand your request...",
