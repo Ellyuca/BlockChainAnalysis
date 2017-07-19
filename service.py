@@ -5,7 +5,35 @@ import requests
 import json
 
 app = Flask(__name__)
+def get_chart():
+    r = requests.get('https://api.blockchain.info/charts/market-price?format=json&timespan=30days')
+    result= r.json()
+    
+    x_list= []
+    y_list= []
+    for obj in result['values']:
+        x_list.append(obj['x'])
+        y_list.append(obj['y'])    
 
+    last_result = [datetime.datetime.fromtimestamp(day).strftime("%d/%m") for day in x_list]
+    
+    plt.plot(x_list, y_list)
+    plt.xticks(x_list[0::2],last_result[0::2])
+    low = (min(y_list)// 100)*100-100
+    high = (max(y_list)// 100)*100+200
+    plt.yticks(np.arange(low, high, 100))
+    
+    print("my Y valeus",y_list)
+    plt.xlabel('Day')
+    figure = plt.gcf() # get current figure
+    figure.set_size_inches(12, 7)
+    figure.tight_layout()
+    plt.grid(True)    
+    plt.savefig("my_chart.png", dpi = 500, orientation='landscape', pad_inches=0, bbox_inches='tight')    
+    plt.show()
+
+   
+    return 
 
 def get_ticker(currency):
     """Get the currency echange ratio of bitcoin.
