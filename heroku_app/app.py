@@ -14,10 +14,10 @@ import datetime
 import numpy as np
 
 app = Flask(__name__)
-CHARTS_DIR = "static"
+TMP_FILE = "/tmp/myChart.jpeg"
 
 @app.route("/updateChart", methods=['GET'])
-def update_chart(filename="myChart.jpeg"):
+def update_chart():
     """Download chart and save the image.
 
     ref: https://core.telegram.org/blackberry/chat-media-send
@@ -47,22 +47,21 @@ def update_chart(filename="myChart.jpeg"):
     figure.set_size_inches(12, 7)
     figure.tight_layout()
     plt.grid(True)
-    out_path = path.join(CHARTS_DIR, filename)
-    plt.savefig(out_path, dpi=200, orientation='landscape',
+    plt.savefig(TMP_FILE, dpi=200, orientation='landscape',
                 pad_inches=0, bbox_inches='tight')
     ##
     # Resize for telegram
-    foo = Image.open(out_path)
+    foo = Image.open(TMP_FILE)
     size_x, size_y = foo.size
     foo = foo.resize((int(size_x / 4), int(size_y / 4)),Image.ANTIALIAS)
-    foo.save(out_path, quality=87)
+    foo.save(TMP_FILE, quality=87)
     return jsonify({
         'url': "https://getcharts.herokuapp.com/getChart"
     })
 
 @app.route("/getChart", methods=['GET'])
 def get_chart():
-    return send_file(out_path, mimetype="image/jpeg")
+    return send_file(TMP_FILE, mimetype="image/jpeg")
 
 if __name__ == "__main__":
     app.run(debug=True, use_reloader=True)
