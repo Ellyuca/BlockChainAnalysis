@@ -1,7 +1,9 @@
+#*-* coding: utf-8 *-*
 from flask import Flask
 from flask import jsonify
 from flask import request
 from flask import url_for
+from flask import send_file
 
 # matplotlib
 import matplotlib as mpl
@@ -16,48 +18,18 @@ from os import path
 from PIL import Image
 
 app = Flask(__name__)
+CHARTS_DIR = "static"
 
 
-def get_chart(filename="myChart.jpeg"):
+def get_chart_URL(filename="myChart.jpeg"):
     """Download chart and save the image.
 
     ref: https://core.telegram.org/blackberry/chat-media-send
     """
-    r = requests.get(
-        'https://api.blockchain.info/charts/market-price?format=json&timespan=30days')
+    r = requests.get('https://getcharts.herokuapp.com/updateChart')
     result = r.json()
 
-    x_list = []
-    y_list = []
-    for obj in result['values']:
-        x_list.append(obj['x'])
-        y_list.append(obj['y'])
-
-    last_result = [datetime.datetime.fromtimestamp(
-        day).strftime("%d/%m") for day in x_list]
-
-    plt.plot(x_list, y_list, rasterized=True)
-    plt.xticks(x_list[0::2], last_result[0::2])
-    low = (min(y_list) / 100) * 100 - 100
-    high = (max(y_list) / 100) * 100 + 200
-    plt.yticks(np.arange(low, high, 100))
-
-    # print("my Y valeus", y_list)
-    plt.xlabel('Day')
-    figure = plt.gcf()  # get current figure
-    figure.set_size_inches(12, 7)
-    figure.tight_layout()
-    plt.grid(True)
-    out_path = path.join('static', filename)
-    plt.savefig(out_path, dpi=300, orientation='landscape',
-                pad_inches=0, bbox_inches='tight')
-    ##
-    # Resize for telegram
-    foo = Image.open(out_path)
-    size_x, size_y = foo.size
-    foo = foo.resize((size_x / 4, size_y / 4),Image.ANTIALIAS)
-    foo.save(out_path, quality=87)
-    return "http://139.59.105.205{}".format(url_for('static', filename=filename))
+    return result['url']
 
 
 def get_ticker(currency):
@@ -124,7 +96,7 @@ def chainBot():
         ##
         # INFO MARKET
         elif req['result']['contexts'][0]['name'] == "info-market":
-            chart_url = get_chart()
+            chart_url = get_chart_URL()
             print(chart_url)
             return jsonify({
                 "speech": chart_url,
@@ -159,4 +131,11 @@ def chainBot():
 
 
 if __name__ == "__main__":
-    app.run("0.0.0.0", 80, debug=True)
+    app.run("0.0.0.0",  80, debug=True
+        ##
+        # Only for HTTPS
+        # , ssl_context=(
+        #     '/etc/letsencrypt/live/chain.vector3d.xyz/fullchain.pem',
+        #     '/etc/letsencrypt/live/chain.vector3d.xyz/privkey.pem'
+        #     )
+     )
