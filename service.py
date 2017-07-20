@@ -2,20 +2,9 @@
 from flask import Flask
 from flask import jsonify
 from flask import request
-from flask import url_for
-from flask import send_file
-
-# matplotlib
-import matplotlib as mpl
-mpl.use('Agg')
-import matplotlib.pyplot as plt
 
 import requests
 import json
-import datetime
-import numpy as np
-from os import path
-from PIL import Image
 
 app = Flask(__name__)
 CHARTS_DIR = "static"
