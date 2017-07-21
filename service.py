@@ -1,46 +1,29 @@
+#*-* coding: utf-8 *-*
 from flask import Flask
 from flask import jsonify
 from flask import request
+
 import requests
 import json
 
 app = Flask(__name__)
-def get_chart():
-    r = requests.get('https://api.blockchain.info/charts/market-price?format=json&timespan=30days')
-    result= r.json()
-    
-    x_list= []
-    y_list= []
-    for obj in result['values']:
-        x_list.append(obj['x'])
-        y_list.append(obj['y'])    
+CHARTS_DIR = "static"
 
-    last_result = [datetime.datetime.fromtimestamp(day).strftime("%d/%m") for day in x_list]
-    
-    plt.plot(x_list, y_list)
-    plt.xticks(x_list[0::2],last_result[0::2])
-    low = (min(y_list)// 100)*100-100
-    high = (max(y_list)// 100)*100+200
-    plt.yticks(np.arange(low, high, 100))
-    
-    print("my Y valeus",y_list)
-    plt.xlabel('Day')
-    figure = plt.gcf() # get current figure
-    figure.set_size_inches(12, 7)
-    figure.tight_layout()
-    plt.grid(True)    
-    plt.savefig("my_chart.png", dpi = 500, orientation='landscape', pad_inches=0, bbox_inches='tight')    
-    plt.show()
 
-   
-    return 
+def get_chart_URL(filename="myChart.jpeg"):
+    """Download chart and save the image.
+    ref: https://core.telegram.org/blackberry/chat-media-send
+    """
+    r = requests.get('https://getcharts.herokuapp.com/updateChart')
+    result = r.json()
+
+    return result['url']
+
 
 def get_ticker(currency):
     """Get the currency echange ratio of bitcoin.
-
     Params:
         currencyt (str): the currency selected by the user
-
     Returns:
         (str) The response string
     """
@@ -55,28 +38,44 @@ def get_ticker(currency):
         CURRENCY_TYPE[currency],
         result[CURRENCY_TYPE[currency]]['last']
     )
+def get_stats():
+    """Get the general stats about blockchains.
 
+    Returns:
+        (str) The response string
+    """
+    
+    result = requests.get('https://api.blockchain.info/stats')
+    result = result.json()
+    return "The market price in USD is {}. The hash rate is {}. The number of blocks mined is {}. The number of total blocks is {}. The estimated transaction volume is {}. The bitcoin trade volume is {}. The USD trade volumes is {} ".format(
+        result['market_price_usd'], 
+        result['hash_rate'], 
+        result['n_blocks_mined'],
+        result['n_blocks_total'],
+        result['estimated_transaction_volume_usd'],
+        result['trade_volume_btc'],
+        result['trade_volume_usd']
+    )
 
 @app.route("/chainBot", methods=['POST'])
 def chainBot():
     """The Chain Bot service.
-
     Doc: https://api.ai/docs/fulfillment
     Doc on error responses: https://api.ai/docs/fulfillment#errors
     """
     ##
     # Convert the request data string into JSON obj
     req = json.loads(request.data)
-    print(req)
+    print(json.dumps(req, indent=2))
     ##
     # Check if the action is completed
     if not req['result']['actionIncomplete']:
         ##
-        # Check in which context we are
+        # INFO CRYPTOCURRENCY EXCHANGE
         if req['result']['contexts'][0]['name'] == "info-cryptocurrency-exchange":
             ##
             # Call the reponse for the "info-bitcoin-exchange" context
-            if  req['result']['contexts'][0]['parameters']['cryptocurrency'] == "bitcoin":
+            if req['result']['contexts'][0]['parameters']['cryptocurrency'] == "bitcoin":
                 response = get_ticker(req['result']['contexts'][
                                       0]['parameters']['currency'])
                 ##
@@ -87,7 +86,7 @@ def chainBot():
                     "data": {},
                     "contextOut": [],
                     "source": ""
-                }), 200, {'Content-Type': 'text/css; charset=utf-8'}
+                }), 200, {'Content-Type': 'application/json; charset=utf-8'}
             else:
                 return jsonify({
                     "speech": "I don't know the exchange rate for that cryptocurrency...",
@@ -95,7 +94,39 @@ def chainBot():
                     "data": {},
                     "contextOut": [],
                     "source": ""
-                }), 200, {'Content-Type': 'text/css; charset=utf-8'}
+                }), 200, {'Content-Type': 'application/json; charset=utf-8'}
+        ##
+        # INFO MARKET
+        elif req['result']['contexts'][0]['name'] == "info-market":
+            chart_url = get_chart_URL()
+            print(chart_url)
+            return jsonify({
+                "speech": chart_url,
+                "messages": [
+                    {
+                        "type": 3,
+                        "platform": "telegram",
+                        "imageUrl": chart_url
+                    },
+                    {
+                        "type": 0,
+                        "speech": chart_url
+                    }
+                ]
+            }), 200, {'Content-Type': 'application/json; charset=utf-8'}
+        ##
+        #INFO STATS
+        elif req['result']['contexts'][0]['name'] == "info-stats":
+            response = get_stats()
+                ##
+                # Return the response
+            return jsonify({
+                    "speech": response,
+                    "displayText": response,
+                    "data": {},
+                    "contextOut": [],
+                    "source": ""
+            }), 200, {'Content-Type': 'application/json; charset=utf-8'}
         else:
             return jsonify({
                 "speech": "Sorry, can't understand your request...",
@@ -103,7 +134,7 @@ def chainBot():
                 "data": {},
                 "contextOut": [],
                 "source": ""
-            }), 404, {'Content-Type': 'text/css; charset=utf-8'}
+            }), 404, {'Content-Type': 'application/json; charset=utf-8'}
     else:
         return jsonify({
             "speech": "Sorry, your request is not complete...",
@@ -111,8 +142,15 @@ def chainBot():
             "data": {},
             "contextOut": [],
             "source": ""
-        }), 400, {'Content-Type': 'text/css; charset=utf-8'}
+        }), 400, {'Content-Type': 'application/json; charset=utf-8'}
 
 
 if __name__ == "__main__":
-    app.run("0.0.0.0", 80, debug=True)
+    app.run("0.0.0.0",  80, debug=True
+        ##
+        # Only for HTTPS
+        # , ssl_context=(
+        #     '/etc/letsencrypt/live/chain.vector3d.xyz/fullchain.pem',
+        #     '/etc/letsencrypt/live/chain.vector3d.xyz/privkey.pem'
+        #     )
+)
