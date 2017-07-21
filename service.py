@@ -8,6 +8,7 @@ import json
 
 app = Flask(__name__)
 CHARTS_DIR = "static"
+<<<<<<< HEAD
 
 
 def get_chart_URL(filename="myChart.jpeg"):
@@ -19,6 +20,20 @@ def get_chart_URL(filename="myChart.jpeg"):
 
     return result['url']
 
+=======
+
+
+def get_chart_URL(filename="myChart.jpeg"):
+    """Download chart and save the image.
+
+    ref: https://core.telegram.org/blackberry/chat-media-send
+    """
+    r = requests.get('https://getcharts.herokuapp.com/updateChart')
+    result = r.json()
+
+    return result['url']
+
+>>>>>>> e6e6481dced65ee7ae5dd28c4417520cc6082cf4
 
 def get_ticker(currency):
     """Get the currency echange ratio of bitcoin.
@@ -114,6 +129,7 @@ def chainBot():
                     }
                 ]
             }), 200, {'Content-Type': 'application/json; charset=utf-8'}
+<<<<<<< HEAD
         ##
         #INFO STATS
         elif req['result']['contexts'][0]['name'] == "info-stats":
@@ -127,6 +143,8 @@ def chainBot():
                     "contextOut": [],
                     "source": ""
             }), 200, {'Content-Type': 'application/json; charset=utf-8'}
+=======
+>>>>>>> e6e6481dced65ee7ae5dd28c4417520cc6082cf4
         else:
             return jsonify({
                 "speech": "Sorry, can't understand your request...",
@@ -153,4 +171,8 @@ if __name__ == "__main__":
         #     '/etc/letsencrypt/live/chain.vector3d.xyz/fullchain.pem',
         #     '/etc/letsencrypt/live/chain.vector3d.xyz/privkey.pem'
         #     )
+<<<<<<< HEAD
 )
+=======
+     )
+>>>>>>> e6e6481dced65ee7ae5dd28c4417520cc6082cf4
