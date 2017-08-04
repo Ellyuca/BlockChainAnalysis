@@ -12,7 +12,6 @@ CHARTS_DIR = "static"
 
 def get_chart_URL(filename="myChart.jpeg"):
     """Download chart and save the image.
-
     ref: https://core.telegram.org/blackberry/chat-media-send
     """
     r = requests.get('https://getcharts.herokuapp.com/updateChart')
@@ -23,10 +22,8 @@ def get_chart_URL(filename="myChart.jpeg"):
 
 def get_ticker(currency):
     """Get the currency echange ratio of bitcoin.
-
     Params:
         currencyt (str): the currency selected by the user
-
     Returns:
         (str) The response string
     """
@@ -41,12 +38,28 @@ def get_ticker(currency):
         CURRENCY_TYPE[currency],
         result[CURRENCY_TYPE[currency]]['last']
     )
+def get_stats():
+    """Get the general stats about blockchains.
 
+    Returns:
+        (str) The response string
+    """
+    
+    result = requests.get('https://api.blockchain.info/stats')
+    result = result.json()
+    return "The market price in USD is {}. The hash rate is {}. The number of blocks mined is {}. The number of total blocks is {}. The estimated transaction volume is {}. The bitcoin trade volume is {}. The USD trade volumes is {} ".format(
+        result['market_price_usd'], 
+        result['hash_rate'], 
+        result['n_blocks_mined'],
+        result['n_blocks_total'],
+        result['estimated_transaction_volume_usd'],
+        result['trade_volume_btc'],
+        result['trade_volume_usd']
+    )
 
 @app.route("/chainBot", methods=['POST'])
 def chainBot():
     """The Chain Bot service.
-
     Doc: https://api.ai/docs/fulfillment
     Doc on error responses: https://api.ai/docs/fulfillment#errors
     """
@@ -101,6 +114,19 @@ def chainBot():
                     }
                 ]
             }), 200, {'Content-Type': 'application/json; charset=utf-8'}
+        ##
+        #INFO STATS
+        elif req['result']['contexts'][0]['name'] == "info-stats":
+            response = get_stats()
+                ##
+                # Return the response
+            return jsonify({
+                    "speech": response,
+                    "displayText": response,
+                    "data": {},
+                    "contextOut": [],
+                    "source": ""
+            }), 200, {'Content-Type': 'application/json; charset=utf-8'}
         else:
             return jsonify({
                 "speech": "Sorry, can't understand your request...",
@@ -127,4 +153,4 @@ if __name__ == "__main__":
         #     '/etc/letsencrypt/live/chain.vector3d.xyz/fullchain.pem',
         #     '/etc/letsencrypt/live/chain.vector3d.xyz/privkey.pem'
         #     )
-     )
+)
